@@ -1,0 +1,96 @@
+
+
+set =( [3,4,,5,6] )
+
+break in loops : 
+break fucks loop completely 
+
+continue : 
+continue just go to next loop index without running 
+after continue orders . .
+
+
+one = [[1,2,3],[4,5,6]] 
+for (a , b , c ) in one : 
+print ( a, b , c  , '=' , a+b+c)
+
+
+class any(): 
+    def __init__(self) :
+        self.__hidden_value = 29r8r32894 
+#  __var   make private variable. 
+
+#private and public var in class.
+
+
+import numpy as np 
+np.linspace    # make points between start and end . 
+np.empty
+np.eye 
+np.ones 
+np.zeros 
+np.meshgrid    #2dim
+np.stack       #merge
+np.bitwise_and(arr_1 , arr2)
+np.bitwise_xor(...)  
+np.left_shift(...)  
+...
+np.where(ind>82) 
+np.sort
+new_array = array[filter ....]
+
+
+
+آمار و توابع
+mean - median - standard deviation - 
+variance - average - percentile - 
+peak to peak - 
+
+np.amax
+np.std  
+np.percentile 
+
+
+
+dataframe in pandas    *************
+
+
+
+import pandas as pd 
+
+data_dic = {'one':[1,3,5] , 'two':[6,8,9]}   
+frame = pd.DataFrame(data_dic) 
+set1 = [3,4,5,6,7,7,8,888] 
+series = pd.Series(set1)
+
+dic2 = {1:0 , 2:991 , 7:829 , 9 : 92839342} 
+ser2 = pd.Series(dic2) 
+print(ser2)   
+
+ser3 = pd.Series(dic2 , index= [1 , 7, 9])
+#just specific indexes . 
+print(ser3)
+print(ser3.loc[7])   #read with index name or number use 'loc' 
+
+
+
+#change dataframe to csv 
+# csv = frame.to_csv('new_name_file ' )
+frame = pd.read_csv('path-of-file')
+
+dataframe.sort('name' , axis , ascending , in_place , ......)
+
+
+
+#groupby  : splitting , applying , combining 
+dataframe.groupby('class' , 'age' ) 
+
+
+اعمال توابع روی هر گروه از داده ها : 
+aggregation , transformation , filteration
+
+
+
+
+
+
