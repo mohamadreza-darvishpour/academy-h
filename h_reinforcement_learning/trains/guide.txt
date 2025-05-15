@@ -1,0 +1,33 @@
+GYM 
+:standard api package to simulate : reinforcement learning
+
+site : 
+  https://www.gymlibrary.dev/
+
+classic control env are first envs we 
+learn in rl programming 
+
+for example mojuco used in robotic rl in that 
+sit . read articles in web about it . 
+
+for example in atari environments(envs) state 
+space picture( huge state space) .
+
+
+
+wrapper make us more free to handle submodules in gym 
+. like when we want to view the results.
+
+
+--------------
+
+make custom env
+
+
+
+*** huge notice 
+it is so important when we return anything
+from objects of a class if we don't 
+copy  that object we change the objects 
+even sometimes when we change that's name . 
+**************
