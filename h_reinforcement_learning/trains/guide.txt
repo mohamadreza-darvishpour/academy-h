@@ -31,3 +31,10 @@ from objects of a class if we don't
 copy  that object we change the objects 
 even sometimes when we change that's name . 
 **************
+
+whats the meaning of i.i.d 
+i.i.d = independent and identically distributed,
+i.i.d = مستقل و به طور یکسان توزیع شده 
+*************
+
+
