@@ -38,3 +38,8 @@ i.i.d = مستقل و به طور یکسان توزیع شده
 *************
 
 
+in policy gradient just we calculate the future reward 
+means : from now 't' to t+1 . 
+******************
+
+

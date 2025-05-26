@@ -1,4 +1,6 @@
-#policy gradient.    reinforcement learning 
+#policy gradient.    reinforce: simplest method of policy gradient
+#usually policy gradient has high learning variance that could decrease
+#with base line (future trains)
 '''
 we need a parametrical function for policy. usually use 
 neural network for that. 
@@ -11,7 +13,6 @@ import torch
 from torch import nn 
 import numpy as np 
 from matplotlib import pyplot as plt
-import torch.optim.sgd
 
 class Policy(nn.Module):
     #make network
@@ -27,9 +28,9 @@ class Policy(nn.Module):
         
     def forward(self , state):
         # print('\n3423 state : ' , state)
-        q_pred = self.estimator(state)
+        pred = self.estimator(state)
         # print('\n342332432 stkate : ' , state)
-        return q_pred 
+        return pred 
 
 
 
