@@ -11,7 +11,6 @@ import pandas as pd
 
 
 
-
 data_dir = 'data' # to download dataset and save 
 '''download the datas '''
 
@@ -101,9 +100,10 @@ class Critic(nn.Module):
 # --------------- agent  
 
 class PG_agent:
-    def __init__(self , state_size , action_size , hidden_dim = 64 , learning_rate = .005 , discount_factor = .99):
+    def __init__(self , state_size , action_size , hidden_dim = 64 , learning_rate = .005 , discount_factor = .99 , ac_opt='adam' , cr_opt='adam'):
         self.learning_rate = learning_rate 
         self.discount_factor = discount_factor
+        self.hidden_dim = hidden_dim
         self.state_size = state_size 
         self.action_size = action_size
         self.actor = Actor(input_dim=state_size , output_dim=action_size ,hidden_dim=hidden_dim)
@@ -112,8 +112,15 @@ class PG_agent:
         
         #optimizer 
         self.critic_loss_fn = nn.MSELoss()
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters() , lr= learning_rate)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters() , lr= learning_rate)
+        if(ac_opt=='adam'):
+            self.actor_optimizer = torch.optim.Adam(self.actor.parameters() , lr= learning_rate)
+        else:
+            self.actor_optimizer = torch.optim.SGD(self.actor.parameters() , lr= learning_rate)
+        if(cr_opt=='adam'):
+            self.critic_optimizer = torch.optim.Adam(self.critic.parameters() , lr= learning_rate)
+        else:
+            self.critic_optimizer = torch.optim.SGD(self.critic.parameters() , lr= learning_rate)
+            
         
         
     def sample_action(self , state):
@@ -160,48 +167,113 @@ class PG_agent:
         actor_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.actor.parameters() ,max_norm=1.0) 
         self.actor_optimizer.step()
-        
-        
-        
-# training_loop 
-n_episod = 500 
-max_step = 300
-lr = 0.002
-df = .8
-hidden_dim = 32    #64
-total_reward = [] 
-agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=hidden_dim  , learning_rate= lr , discount_factor= df)
 
-for i in range(n_episod):
-    if i%50 ==0 :
-        print('ep: ',i)
-    state  , _ = env.reset() 
-    episod_states , episod_actions , episod_rewards = [] , [] , [] 
-    step = 0 
-    while True : 
-        flat_state = scalar.transform([np.array(state).flatten()])[0]
-        episod_states.append(flat_state)
-        
-        action , dist = agent.sample_action(flat_state)
-        episod_actions.append(action)
-        
-        next_state , reward , done , truncated , info = env.step(action)
-        episod_rewards.append(reward)
-        
-        state = next_state 
-        step+= 1 
-        if done or truncated  or step>max_step : 
-            break
-    
-    agent.update(np.array(episod_states , dtype=np.float32) , np.array(episod_actions , dtype=np.float32) , episod_rewards)
-    total_reward.append(np.sum(episod_rewards))
-    
-    
-    
+
+
+
 #___________plot 
-plt.plot(np.convolve(total_reward , np.ones(100)/100 , mode='valid'))
-plt.title('smoothed total rewards.')
-plt.xlabel('episode')
-plt.ylabel('total reward')
-plt.grid(True)
-plt.show()
+def save_show_plot(total_reward , n_episod , max_step  , lr , df , hidden_dim , ac_opt , cr_opt , plt_num:int=99999):
+    plt.figure()
+    plt.plot(np.convolve(total_reward , np.ones(20)/20 , mode='same'))
+    plt.title(f'reward(episod:{n_episod},steps:{max_step},lr:{lr},df:{df},hid_dm:{hidden_dim},ac_opt:{ac_opt},cr_opt:{cr_opt})')
+    plt.xlabel('episode')
+    plt.ylabel('total reward')
+    plt.grid(True)
+
+    #save the figure
+    if plt_num==99999:
+        path_save = f'./plot_pic/{np.random.randint(8888 , 999999)}.png'
+    else:
+        path_save = f'./plot_pic/{plt_num}.png'
+    plt.savefig(path_save , dpi=300 , bbox_inches = 'tight')
+    # plt.show(block=False)
+    plt.close()
+
+
+def learn_loop(  max_step , n_episod , h_dim , lr , df , ac_opt , cr_opt , plt_num):
+    agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=h_dim  , learning_rate= lr , discount_factor= df , ac_opt=ac_opt , cr_opt=cr_opt )
+    total_reward=[]
+    for i in range(n_episod):
+        if i%50 ==0 :
+            print('ep: ',i)
+        state  , _ = env.reset() 
+        episod_states , episod_actions , episod_rewards = [] , [] , [] 
+        step = 0 
+        while True : 
+            flat_state = scalar.transform([np.array(state).flatten()])[0]
+            episod_states.append(flat_state)
+            
+            action , dist = agent.sample_action(flat_state)
+            episod_actions.append(action)
+            
+            next_state , reward , done , truncated , info = env.step(action)
+            episod_rewards.append(reward)
+            
+            state = next_state 
+            step+= 1 
+            if done or truncated  or step>max_step : 
+                break
+        
+        agent.update(np.array(episod_states , dtype=np.float32) , np.array(episod_actions , dtype=np.float32) , episod_rewards)
+        total_reward.append(np.sum(episod_rewards))
+        
+    save_show_plot(total_reward ,
+                    n_episod ,
+                    max_step , 
+                    lr , 
+                    df , 
+                    h_dim ,
+                    ac_opt , 
+                    cr_opt , 
+                    plt_num )
+    del agent
+    
+    
+
+# training_loop different parameters
+n_episod = 300   #
+max_step = 300      #
+opts = ['adam' , 'sgd'] 
+lr_s = [float(lr/1000) for lr in range(1 ,90 , 3) ]   # 0.001 , 0.090  0.003    1 , 90 , 3
+df_s =  [float(df/100) for df in range(80, 99 , 2)] 
+hidden_dims = [16 , 32 , 64]
+# total_reward = [] 
+# agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=hidden_dim  , learning_rate= lr , discount_factor= df , ac_opt='adam' , cr_opt='adam')
+
+import os 
+plt_num = 1
+#train for more parameters 
+for ac_opt in opts:
+    for cr_opt in opts:
+        for lr in lr_s:
+            for df in df_s:
+                for h_dim in hidden_dims:
+                    learn_loop( max_step=max_step , n_episod=n_episod , h_dim=h_dim , lr=lr , df = df , ac_opt=ac_opt , cr_opt=cr_opt , plt_num=plt_num)
+                    plt_num+=1
+                    os.system('cls')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
