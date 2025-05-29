@@ -166,8 +166,8 @@ class PG_agent:
 # training_loop 
 n_episod = 500 
 max_step = 300
-lr = 0.002
-df = .8
+lr = 0.001
+df = .99
 hidden_dim = 32    #64
 total_reward = [] 
 agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=hidden_dim  , learning_rate= lr , discount_factor= df)

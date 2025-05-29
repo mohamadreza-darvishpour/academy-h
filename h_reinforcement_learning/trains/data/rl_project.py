@@ -42,7 +42,7 @@ env = gym.make("TradingEnv",
 obs_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
 scalar = StandardScaler()
 obs_sample = []
-for _ in range(1500):
+for _ in range(500):
     state, _ = env.reset()
     flat_state = state.flatten()
     obs_sample.append(flat_state)
@@ -101,13 +101,13 @@ class Critic(nn.Module):
 # --------------- agent  
 
 class PG_agent:
-    def __init__(self , state_size , action_size , hidden_dim = 64 , learning_rate = .005 , discount_factor = .99):
+    def __init__(self , state_size , action_size , learning_rate = .005 , discount_factor = .99):
         self.learning_rate = learning_rate 
         self.discount_factor = discount_factor
         self.state_size = state_size 
         self.action_size = action_size
-        self.actor = Actor(input_dim=state_size , output_dim=action_size ,hidden_dim=hidden_dim)
-        self.critic = Critic(input_dim=state_size , output_dim=1 , hidden_dim=hidden_dim)
+        self.actor = Actor(input_dim=state_size , output_dim=action_size ,hidden_dim=64)
+        self.critic = Critic(input_dim=state_size , output_dim=1 , hidden_dim=64)
         
         
         #optimizer 
@@ -166,11 +166,10 @@ class PG_agent:
 # training_loop 
 n_episod = 500 
 max_step = 300
-lr = 0.002
-df = .8
-hidden_dim = 32    #64
+lr = 0.01
+df = .99
 total_reward = [] 
-agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=hidden_dim  , learning_rate= lr , discount_factor= df)
+agent = PG_agent(obs_dim , env.action_space.n  , learning_rate= lr , discount_factor= df)
 
 for i in range(n_episod):
     if i%50 ==0 :
