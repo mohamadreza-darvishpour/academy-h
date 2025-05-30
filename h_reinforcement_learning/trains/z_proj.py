@@ -1,211 +1,279 @@
-import torch
-from torch import nn
-import numpy as np
-from matplotlib import pyplot as plt
-
-class Actor(nn.Module):
-    def __init__(self, input_dim, output_dim=1, hidden_dim=32):
-        super(Actor, self).__init__()
-
-        '''
-        TODO: Initialize layers for the actor network.
-        Use nn.Linear for linear layers and nn.ReLU for activation.
-        '''
-        
-        layer1 = nn.Linear(input_dim , hidden_dim , bias=True)
-        relu = nn.ReLU()
-        layer2 = nn.Linear(hidden_dim , output_dim , bias=True)
-        self.estimator = nn.Sequential(layer1 , relu , layer2)
-
-
-    def forward(self, state):
-
-        '''
-        TODO: Convert the input state to a torch tensor if it is not already,
-        and pass it through the sequential model to get the prediction.
-        '''
-        pred = self.estimator(state)
-        # print('\n342332432 stkate : ' , state)
-        return pred 
+import torch 
+from torch import nn 
+import numpy as np 
+from matplotlib import pyplot as plt 
+from sklearn.preprocessing import StandardScaler 
+# from tqdm import tqdm 
+import gymnasium as gym 
+import gym_trading_env 
+import pandas as pd 
+# from gym_trading_env.downloader import download  
 
 
 
-class Critic(nn.Module):
-    def __init__(self, input_dim, output_dim=1, hidden_dim=32):
-        super(Critic, self).__init__()
+data_dir = 'data' # to download dataset and save 
+'''download the datas '''
 
-        '''
-        TODO: Initialize layers for the critic network.
-        Use nn.Linear for linear layers and nn.ReLU for activation.
-        '''
-        
-        layer1 = nn.Linear(input_dim , hidden_dim , bias=True)
-        relu = nn.ReLU()
-        layer2 = nn.Linear(hidden_dim , output_dim , bias=True)
-        self.estimator = nn.Sequential(layer1 , relu , layer2)
-
-    def forward(self, state):
-        '''
-        TODO: Convert the input state to a torch tensor if it is not already,
-        and pass it through the model to get the value prediction.
-        '''
-        v_pred = self.estimator(state)
-        return v_pred
-    
-    
-    
-    
-    
-class PG_Agent:
-    def __init__(self, state_size, action_size, learning_rate=0.001, discount_factor=0.98):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.discount_factor = discount_factor
-
-        '''
-        TODO: Initialize the actor and critic networks with state_size and action_size.
-        '''
-
-
-        '''
-        TODO: Initialize the loss function and optimizers for the actor and critic networks using torch.optim.Adam.
-        '''
-
-
-    def sample_action(self, state):
-
-        '''
-        TODO:
-        Get action probabilities from the actor network, apply softmax,
-        and sample an action based on the probabilities.
-        '''
-
-        return action
-
-    def calc_reward_to_go(self, rewards):
-        '''
-        TODO: Calculate discounted future rewards.
-        Initialize a running sum and iterate through rewards in reverse to compute rewards-to-go.
-        '''
-
-
-        return rewards2go
-
-
-    def update(self, states, actions, rewards, max_batch=512):
-        # Process batch if needed
-        if len(states) > max_batch:
-            st_ind = np.random.choice(len(states) - max_batch, 1).item()
-            end_ind = st_ind + max_batch
-            actions = actions[st_ind: end_ind]
-            rewards = rewards[st_ind: end_ind]
-            states = states[st_ind: end_ind]
-
-        actions = torch.tensor(actions)
-        rewards2go = self.calc_reward_to_go(rewards)
-        rewards2go = torch.tensor(rewards2go)
-
-        # Update Critic network
-        '''
-        TODO: Zero the gradients, perform a forward pass to get values, compute the loss,
-        and perform backward pass and optimization step for the critic network.
-        '''
-
-
-        # Update Actor network
-        '''
-        TODO: Zero the gradients, perform a forward pass to get logits,
-        compute the advantages, log probabilities, actor loss, and perform backward pass and optimization step for the actor network.
-        '''
-
-
-
-
-
-from gym_trading_env.downloader import download
-import datetime
-import os
-
-data_dir = 'data'
-os.makedirs(data_dir, exist_ok=True)
-
-# Download and prepare your data
-# Fetch historical BTC/USDT data from the Bitfinex exchange
-# Timeframe is set to 1 hour and data is saved in the 'data' directory
-# Data collection starts from January 1, 2021
-
-download(exchange_names=["bitfinex2"], symbols=["BTC/USDT"], timeframe="1h", dir="data",
-         since=datetime.datetime(year=2021, month=1, day=1))
-
-
-
-
-import gymnasium as gym
-import pandas as pd
-from tqdm import tqdm
-import os
-
-# Load dataset
-df = pd.read_pickle("./data/bitfinex2-BTCUSDT-1h.pkl")
-
-# Create features for the trading environment
-df["feature_pct_change"] = df["close"].pct_change()
-df["feature_high"] = df["high"] / df["close"] - 1
-df["feature_low"] = df["low"] / df["close"] - 1
+df = pd.read_pickle("./data/btcusdt.pkl")
+df['feature_pct_change'] = df["close"].pct_change()
+df['feature_high'] = df['high']/df['close']
+df['feature_low'] = df['low']/df['close']
 df.dropna(inplace=True)
+# plt.figure()
+# plt.plot(df['feature_pct_change'] , label='pct_change')
+# plt.plot(df['feature_high'] , label='high')
+# plt.plot(df['feature_low'] , label='low')
+# plt.legend()
+# plt.show()
 
 
-# Initialize the trading environment
+# _____________________ env 
+
+
 env = gym.make("TradingEnv",
-        name= "BTCUSD",
-        df = df, # Your dataset with your custom features
-        positions = [ -1, 0, 1], # -1 (=SHORT), 0(=OUT), +1 (=LONG)
-        trading_fees = 0.01/100, # 0.01% per stock buy / sell (Binance fees)
-        borrow_interest_rate = 0.0003/100, # 0.0003% per timestep (one timestep = 1h here)
-        windows = 20) # Past N observations
+        name="BTCUSD",
+        df=df,
+        positions=[-1, 0, 1],
+        trading_fees=0.01/100,
+        borrow_interest_rate=0.0003/100,
+        windows=20)
 
 obs_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
-# Initialize the policy gradient agent
-agent = PG_Agent(obs_dim, env.action_space.n)
+scalar = StandardScaler()
+obs_sample = []
+for _ in range(1500):
+    state, _ = env.reset()
+    flat_state = state.flatten()
+    obs_sample.append(flat_state)
+obs_sample = np.array(obs_sample)
+scalar.fit(obs_sample)
 
-n_episodes = 500
-total_reward = []
-
-for i in tqdm(range(n_episodes)):
-    state, info = env.reset()
-
-    episode_states = []
-    episode_rewards = []
-    episode_actions = []
-
-    done, truncated = False, False
-    max_steps = 10000 # Maximum number of steps per episode
-    step = 0
-    while not done and not truncated and step < max_steps:
-
-        '''
-        TODO: Flatten the state for the agent, sample an action from the policy,
-        interact with the environment using the sampled action,
-        and store the state, action, and reward.
-        '''
+# _____________________ actor critic 
 
 
-        state = next_state
-        step += 1
+class Actor(nn.Module):
+    def __init__(self , input_dim , output_dim =1 , hidden_dim=64):
+        super(Actor ,self).__init__()
+        l_1 = nn.Linear(input_dim , hidden_dim)
+        r1  = nn.ReLU()
+        l_2 = nn.Linear(hidden_dim , hidden_dim)
+        r2  = nn.ReLU()
+        l_3 = nn.Linear(hidden_dim , output_dim)
+        self.estimator = nn.Sequential(
+            l_1 , 
+            r1,
+            l_2,
+            r2,
+            l_3 
+        )
+        
+    def forward(self , state):
+        if not isinstance(state , torch.Tensor):
+            state = torch.tensor(state , dtype = torch.float32)
+        return self.estimator(state) 
+    
 
-    # Update the agent after the episode
-    agent.update(np.array(episode_states), np.array(episode_actions), episode_rewards)
-    total_reward.append(np.sum(episode_rewards))
+class Critic(nn.Module):
+    def __init__(self , input_dim , output_dim =1 , hidden_dim=64):
+        super(Critic ,self).__init__()
+        l_1 = nn.Linear(input_dim , hidden_dim)
+        r1  = nn.ReLU()
+        l_2 = nn.Linear(hidden_dim , hidden_dim)
+        r2  = nn.ReLU()
+        l_3 = nn.Linear(hidden_dim , output_dim)
+        self.estimator = nn.Sequential(
+            l_1 , 
+            r1,
+            l_2,
+            r2,
+            l_3 
+        )
+        
+    def forward(self , state):
+        if not isinstance(state , torch.Tensor):
+            state = torch.tensor(state , dtype = torch.float32)
+        return self.estimator(state) 
+    
+    
+    
+    
+# --------------- agent  
 
-# Plot the smoothed total rewards over episodes
-plt.plot(np.convolve(total_reward, np.ones(20) / 20)[10: -10])
-plt.title('Smoothed Rewards')
-plt.show()
+class PG_agent:
+    def __init__(self , state_size , action_size , hidden_dim = 64 , learning_rate = .005 , discount_factor = .99 , ac_opt='adam' , cr_opt='adam'):
+        self.learning_rate = learning_rate 
+        self.discount_factor = discount_factor
+        self.hidden_dim = hidden_dim
+        self.state_size = state_size 
+        self.action_size = action_size
+        self.actor = Actor(input_dim=state_size , output_dim=action_size ,hidden_dim=hidden_dim)
+        self.critic = Critic(input_dim=state_size , output_dim=1 , hidden_dim=hidden_dim)
+        
+        
+        #optimizer 
+        self.critic_loss_fn = nn.MSELoss()
+        if(ac_opt=='adam'):
+            self.actor_optimizer = torch.optim.Adam(self.actor.parameters() , lr= learning_rate)
+        else:
+            self.actor_optimizer = torch.optim.SGD(self.actor.parameters() , lr= learning_rate)
+        if(cr_opt=='adam'):
+            self.critic_optimizer = torch.optim.Adam(self.critic.parameters() , lr= learning_rate)
+        else:
+            self.critic_optimizer = torch.optim.SGD(self.critic.parameters() , lr= learning_rate)
+            
+        
+        
+    def sample_action(self , state):
+        logits = self.actor(state)
+        logits = logits - logits.max() #numerical stability ? ????
+        probs = torch.softmax(logits , dim=-1)
+        dist = torch.distributions.Categorical(probs= probs)
+        return dist.sample().item() , dist 
+    
+    def calc_reward_to_go(self , rewards):
+        rewards2go = np.zeros_like(rewards ,dtype=np.float32)
+        running_add = 0 
+        for t in reversed(range(len(rewards))):
+            running_add = rewards[t] + self.discount_factor * running_add
+            rewards2go[t] = running_add
+        return rewards2go
+    
+    
+    def update(self , states , actions , rewards):
+        actions = torch.tensor(actions ) 
+        rewards2go = torch.tensor(self.calc_reward_to_go(rewards=rewards) , dtype=torch.float32)
+        states = torch.tensor(states , dtype =torch.float32)
+        
+        self.critic_optimizer.zero_grad()
+        values  = self.critic(states).squeeze() 
+        critic_loss = self.critic_loss_fn(values , rewards2go)
+        critic_loss.backward()
+        #************
+        torch.nn.utils.clip_grad_norm_(self.critic.parameters() , 1.0)
+        self.critic_optimizer.step()
+        
+        self.actor_optimizer.zero_grad()
+        logits = self.actor(states)
+        probs = torch.softmax(logits ,dim=-1)
+        dist = torch.distributions.Categorical(probs)
+        log_probs = dist.log_prob(actions)
+        
+        with torch.no_grad():
+            baseline   = self.critic(states).squeeze()
+            advantages = rewards2go - baseline 
+            
+        entropy = dist.entropy().mean()
+        actor_loss = -(log_probs * advantages ).mean() + 0.01 * entropy #entropy
+        actor_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters() ,max_norm=1.0) 
+        self.actor_optimizer.step()
 
 
 
 
+#___________plot 
+def save_show_plot(total_reward , n_episod , max_step  , lr , df , hidden_dim , ac_opt , cr_opt , plt_num:int=99999):
+    plt.figure()
+    plt.plot(np.convolve(total_reward , np.ones(20)/20 , mode='same'))
+    plt.title(f'reward(episod:{n_episod},steps:{max_step},lr:{lr},df:{df},hid_dm:{hidden_dim},ac_opt:{ac_opt},cr_opt:{cr_opt})')
+    plt.xlabel('episode')
+    plt.ylabel('total reward')
+    plt.grid(True)
+
+    #save the figure
+    if plt_num==99999:
+        path_save = f'./plot_pic/{np.random.randint(8888 , 999999)}.png'
+    else:
+        path_save = f'./plot_pic/{plt_num}.png'
+    plt.savefig(path_save , dpi=300 , bbox_inches = 'tight')
+    # plt.show(block=False)
+    plt.close()
 
 
+def learn_loop(  max_step , n_episod , h_dim , lr , df , ac_opt , cr_opt , plt_num):
+    agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=h_dim  , learning_rate= lr , discount_factor= df , ac_opt=ac_opt , cr_opt=cr_opt )
+    total_reward=[]
+    for i in range(n_episod):
+        if i%50 ==0 :
+            print('ep: ',i)
+        state  , _ = env.reset() 
+        episod_states , episod_actions , episod_rewards = [] , [] , [] 
+        step = 0 
+        while True : 
+            flat_state = scalar.transform([np.array(state).flatten()])[0]
+            episod_states.append(flat_state)
+            
+            action , dist = agent.sample_action(flat_state)
+            episod_actions.append(action)
+            
+            next_state , reward , done , truncated , info = env.step(action)
+            episod_rewards.append(reward)
+            
+            state = next_state 
+            step+= 1 
+            if done or truncated  or step>max_step : 
+                break
+        
+        agent.update(np.array(episod_states , dtype=np.float32) , np.array(episod_actions , dtype=np.float32) , episod_rewards)
+        total_reward.append(np.sum(episod_rewards))
+        
+    save_show_plot(total_reward ,
+                    n_episod ,
+                    max_step , 
+                    lr , 
+                    df , 
+                    h_dim ,
+                    ac_opt , 
+                    cr_opt , 
+                    plt_num )
+    del agent
+    
+    
 
+# training_loop different parameters
+n_episod = 300   #
+max_step = 300      #
+opts = ['adam' , 'sgd'] 
+lr_s = [float(lr/1000) for lr in range(1 ,90 , 3) ]   # 0.001 , 0.090  0.003    1 , 90 , 3
+df_s =  [float(df/100) for df in range(80, 99 , 2)] 
+hidden_dims = [16 , 32 , 64]
+# total_reward = [] 
+# agent = PG_agent(obs_dim , env.action_space.n , hidden_dim=hidden_dim  , learning_rate= lr , discount_factor= df , ac_opt='adam' , cr_opt='adam')
 
+import os 
+plt_num = 1
+#train for more parameters 
+for ac_opt in opts:
+    for cr_opt in opts:
+        for lr in lr_s:
+            for df in df_s:
+                for h_dim in hidden_dims:
+                    learn_loop( max_step=max_step , n_episod=n_episod , h_dim=h_dim , lr=lr , df = df , ac_opt=ac_opt , cr_opt=cr_opt , plt_num=plt_num)
+                    plt_num+=1
+                    os.system('cls')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
