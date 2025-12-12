@@ -37,6 +37,7 @@ missing data may show with '?' or 'nan' or "none" .... in datas.
 
 
 #libs 
+from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import pandas as pd 
 import math 
@@ -88,6 +89,33 @@ normalization helps to scaling and correlation
 
 
 
+# brief way of scaling with scikit-learn
+min_max_scaler = MinMaxScaler()
+x = raw_data[cont_attr].values
+x_scaled = min_max_scaler.fit_transform(x) 
+
+normalized = pd.DataFrame(x_scaled , columns=cont_attr , index=raw_data.index)
+raw_data[cont_attr] = normalized
+
+print(raw_data)
+
+
+''' 
+
+for inx in cont_attr: 
+    x = raw_data[inx]
+    x_min = raw_data[inx].min()
+    x_max = raw_data[inx].max()
+
+    print("------")
+    print("before")
+    print("before ind : {0} - min: {1} - max: {2}".format(inx , x_min , x_max))
+    raw_data[inx]  = (x - x_min)/(x_max - x_min)
+    x_min = raw_data[inx].min()
+    x_max = raw_data[inx].max()
+    print("after")
+    print("before ind : {0} - min: {1} - max: {2}".format(inx , x_min , x_max))
+
 
 
 #return the matris where missing data show 'true' else 'false'
@@ -99,7 +127,7 @@ print(raw_data.isna().sum())
 
 
 
-
+'''
 
 
 
