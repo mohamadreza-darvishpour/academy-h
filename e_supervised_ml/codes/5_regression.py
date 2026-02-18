@@ -31,7 +31,7 @@ use this linear model
 
 
 
-X,Y = make_regression(n_samples=400 , n_features=1 , n_informative=1 , noise=3.75 )
+X,Y = make_regression(n_samples=400 , n_features=1 , n_informative=1 , noise=63.75 )
 x_train , x_test , y_train ,y_test = train_test_split(X , Y , test_size=0.2)
 #we use noise 0 to see the changes with changing in parameters.
 
