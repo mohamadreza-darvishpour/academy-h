@@ -10,7 +10,11 @@ p(a)   > prior
 p(b)   > marginalization
 
 
-http://scikit-learn.org/stable/modules/naive_bayes.html
+http://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html
+
+
+
+
 '''
 
 from sklearn.datasets import load_iris
@@ -20,11 +24,12 @@ from sklearn.naive_bayes import GaussianNB , MultinomialNB
 from sklearn.metrics import accuracy_score , roc_curve , confusion_matrix
 import matplotlib.pyplot as plt 
 import seaborn as sns
+from sklearn.datasets import make_classification
+from sklearn.preprocessing import MinMaxScaler
 
-
-
-X,Y = load_iris(return_X_y=True)
-
+X,Y = make_classification(  1000 ,n_features=20 ,  n_informative=15 , n_classes=5  )
+min_max_scaler = MinMaxScaler() 
+X = min_max_scaler.fit_transform(X)
 
 x_train , x_test , y_train , y_test = train_test_split(X,Y , test_size=0.2)
 print(x_train.shape , x_test.shape)
