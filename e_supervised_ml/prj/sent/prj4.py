@@ -1,73 +1,168 @@
-# تمرین شناسایی چهره با Olivetti Faces
-#اجازه ی دانلود داده نمیشه...
-# ==============================
+# ---------------------------------------------------
+# Import required libraries
+# ---------------------------------------------------
 
-# 1- بارگذاری داده‌ها
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Dataset and train-test split
 from sklearn.datasets import fetch_olivetti_faces
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-import numpy as np
 
-data = fetch_olivetti_faces()
-X = data.images       # تصاویر 64x64
-y = data.target       # برچسب‌ها (۰ تا ۳۹)
-
-# تقسیم داده به مجموعه آموزش و آزمون (۸۰:۲۰)
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-print(f"تعداد تصاویر کل: {X.shape[0]}")
-print(f"تعداد افراد: {len(np.unique(y))}")
-
-# الف) نمایش یک تصویر از هر فرد
-
-fig, axes = plt.subplots(4, 10, figsize=(15, 6))
-for i in range(40):
-    ax = axes[i//10, i%10]
-    ax.imshow(X[y == i][0], cmap='gray')
-    ax.axis('off')
-    ax.set_title(f"{i}")
-plt.tight_layout()
-plt.show()
-
-# ب) آموزش مدل SVM
+# Machine learning models
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-
-# تبدیل تصاویر 2D به وکتور 1D
-X_train_flat = X_train.reshape(X_train.shape[0], -1)
-X_test_flat = X_test.reshape(X_test.shape[0], -1)
-
-svm_model = SVC(kernel='linear', C=1)
-svm_model.fit(X_train_flat, y_train)
-y_pred_svm = svm_model.predict(X_test_flat)
-accuracy_svm = accuracy_score(y_test, y_pred_svm)
-print(f"دقت SVM: {accuracy_svm:.2f}")
-
-# ج) آموزش مدل‌های تجمعی: Random Forest و AdaBoost
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 
-# Random Forest
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_model.fit(X_train_flat, y_train)
-y_pred_rf = rf_model.predict(X_test_flat)
-accuracy_rf = accuracy_score(y_test, y_pred_rf)
+# Evaluation metric
+from sklearn.metrics import accuracy_score
 
-# AdaBoost
-ada_model = AdaBoostClassifier(n_estimators=100, random_state=42)
-ada_model.fit(X_train_flat, y_train)
-y_pred_ada = ada_model.predict(X_test_flat)
-accuracy_ada = accuracy_score(y_test, y_pred_ada)
+# ---------------------------------------------------
+# Load Olivetti Faces dataset
+# ---------------------------------------------------
 
-print(f"دقت Random Forest: {accuracy_rf:.2f}")
-print(f"دقت AdaBoost: {accuracy_ada:.2f}")
+faces = fetch_olivetti_faces()
 
-# د) پیشنهاد بهبود نتایج
-print("""
-برای بهبود دقت می‌توان:
-1. کاهش ابعاد با PCA یا LDA
-2. تنظیم هایپرپارامترهای مدل‌ها (GridSearchCV)
-3. افزایش داده‌ها (Data Augmentation)
-4. استفاده از شبکه‌های عصبی عمیق (CNN)
-""") 
+# X = images data
+# Shape -> (400, 64, 64)
+X = faces.images
+
+# y = target labels (person IDs)
+y = faces.target
+
+# ---------------------------------------------------
+# Print number of persons
+# ---------------------------------------------------
+
+unique_persons = np.unique(y)
+
+print("Number of persons in dataset:", len(unique_persons))
+
+# ---------------------------------------------------
+# Display one image from each person
+# ---------------------------------------------------
+
+plt.figure(figsize=(15, 8))
+
+# Loop through all persons
+for i, person_id in enumerate(unique_persons):
+
+    # Find first image index of each person
+    index = np.where(y == person_id)[0][0]
+
+    # Create subplot
+    plt.subplot(4, 10, i + 1)
+
+    # Display image
+    plt.imshow(X[index], cmap='gray')
+
+    # Image title
+    plt.title(f"P{person_id}")
+
+    # Hide axes
+    plt.axis('off')
+
+# Adjust spacing
+plt.tight_layout()
+
+# Show images together
+plt.show()
+
+# ---------------------------------------------------
+# Prepare data for machine learning
+# Convert 64x64 images to 1D vectors
+# ---------------------------------------------------
+
+X = X.reshape((X.shape[0], -1))
+
+# ---------------------------------------------------
+# Split dataset into training and testing sets
+# 80% train and 20% test
+# ---------------------------------------------------
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# ===================================================
+# Part (B) - SVM Model
+# ===================================================
+
+# Create SVM classifier
+svm_model = SVC(kernel='linear')
+
+# Train model
+svm_model.fit(X_train, y_train)
+
+# Predict test data
+y_pred_svm = svm_model.predict(X_test)
+
+# Calculate accuracy
+svm_accuracy = accuracy_score(y_test, y_pred_svm)
+
+print("\nSVM Accuracy:", svm_accuracy)
+
+# ===================================================
+# Part (C) - Random Forest Model
+# ===================================================
+
+# Create Random Forest classifier
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+# Train model
+rf_model.fit(X_train, y_train)
+
+# Predict test data
+y_pred_rf = rf_model.predict(X_test)
+
+# Calculate accuracy
+rf_accuracy = accuracy_score(y_test, y_pred_rf)
+
+print("Random Forest Accuracy:", rf_accuracy)
+
+# ===================================================
+# Part (C) - AdaBoost Model
+# ===================================================
+
+# Create AdaBoost classifier
+ada_model = AdaBoostClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+# Train model
+ada_model.fit(X_train, y_train)
+
+# Predict test data
+y_pred_ada = ada_model.predict(X_test)
+
+# Calculate accuracy
+ada_accuracy = accuracy_score(y_test, y_pred_ada)
+
+print("AdaBoost Accuracy:", ada_accuracy)
+
+# ===================================================
+# Compare models
+# ===================================================
+
+print("\n------ Model Comparison ------")
+print(f"SVM Accuracy           : {svm_accuracy:.4f}")
+print(f"Random Forest Accuracy : {rf_accuracy:.4f}")
+print(f"AdaBoost Accuracy      : {ada_accuracy:.4f}")
+
+# Find best model
+best_accuracy = max(svm_accuracy, rf_accuracy, ada_accuracy)
+
+if best_accuracy == svm_accuracy:
+    print("\nBest Model: SVM")
+
+elif best_accuracy == rf_accuracy:
+    print("\nBest Model: Random Forest")
+
+else:
+    print("\nBest Model: AdaBoost")
