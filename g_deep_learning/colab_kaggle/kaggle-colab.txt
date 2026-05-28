@@ -1,0 +1,37 @@
+برای استفاده از API در Kaggle معمولاً باید فایل `kaggle.json` را دانلود کنید، چون این فایل شامل **API Token** شماست و به برنامه اجازه می‌دهد به حساب کگل متصل شود.
+
+این فایل معمولاً شامل دو مقدار است:
+
+```json
+{
+  "username": "your_username",
+  "key": "your_api_key"
+}
+```
+
+کاربردش این است که بتوانید با دستورهای API:
+
+* دیتاست دانلود کنید
+* مسابقه‌ها را مدیریت کنید
+* نوت‌بوک‌ها را آپلود کنید
+* فایل‌ها را از ترمینال یا Google Colab بگیرید
+
+مثلاً در Google Colab:
+
+```bash
+!mkdir -p ~/.kaggle
+!cp kaggle.json ~/.kaggle/
+!chmod 600 ~/.kaggle/kaggle.json
+```
+
+بعد می‌توانید دانلود کنید:
+
+```bash
+!kaggle datasets download -d zynicide/wine-reviews
+```
+
+اگر فایل را دانلود نکنید، API نمی‌فهمد شما چه کسی هستید و اجازه دسترسی نمی‌دهد.
+
+مسیر ساخت API Token در سایت رسمی کگل:
+
+[Kaggle Account Settings](https://www.kaggle.com/settings/account?utm_source=chatgpt.com)
