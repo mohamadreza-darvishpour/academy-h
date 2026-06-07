@@ -1,130 +1,146 @@
-# =========================================
-# 17 Flower Classification using CNN (Keras)
-# =========================================
-
 import tensorflow as tf
 from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.preprocessing import image
-import numpy as np
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import matplotlib.pyplot as plt
 import os
+# -------------------------------
+# 1. تنظیم مسیرها و پارامترها
+# -------------------------------
+data_dir = "/content/17flowerclasses"            # مسیر ریشه دیتاست
+train_dir = os.path.join(data_dir, "train")
+test_dir = os.path.join(data_dir, "test")
 
-train_dir = "./project/17flowers/17flowerclasses/train"
-test_dir = "./project/17flowers/17flowerclasses/test"
+IMG_SIZE = (128, 128)            # اندازه ورودی تصاویر
+BATCH_SIZE = 32
+NUM_CLASSES = 17
+EPOCHS = 50                      # تعداد دوره‌ها (EarlyStopping قطع می‌کند)
 
-
-# Parameters
-
-img_size = (150, 150)
-batch_size = 32
-epochs = 3
-
-# Data Preprocessing + Augmentation
+# -------------------------------
+# 2. آماده‌سازی داده‌ها با افزایش (Augmentation)
+# -------------------------------
 train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20,
+    rescale=1./255,               # نرمال‌سازی پیکسل‌ها به [0,1]
+    rotation_range=30,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
     zoom_range=0.2,
-    horizontal_flip=True
+    horizontal_flip=True,
+    fill_mode='nearest'
 )
 
+# برای مجموعه تست فقط نرمال‌سازی می‌کنیم (بدون افزایش)
 test_datagen = ImageDataGenerator(rescale=1./255)
 
-train_data = train_datagen.flow_from_directory(
+train_generator = train_datagen.flow_from_directory(
     train_dir,
-    target_size=img_size,
-    batch_size=batch_size,
-    class_mode='categorical'
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=True
 )
 
-test_data = test_datagen.flow_from_directory(
+test_generator = test_datagen.flow_from_directory(
     test_dir,
-    target_size=img_size,
-    batch_size=batch_size,
-    class_mode='categorical'
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False
 )
 
-# =========================================
-# CNN Model
-# =========================================
+# بررسی تعداد تصاویر در هر دسته
+print(f"تعداد کلاس‌ها: {train_generator.num_classes}")
+print(f"نام کلاس‌ها: {train_generator.class_indices}")
 
-model = models.Sequential()
+# -------------------------------
+# 3. ساخت مدل CNN
+# -------------------------------
+model = models.Sequential([
+    layers.Conv2D(32, (3,3), activation='relu', input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3)),
+    layers.MaxPooling2D(2,2),
+    
+    layers.Conv2D(64, (3,3), activation='relu'),
+    layers.MaxPooling2D(2,2),
+    
+    layers.Conv2D(128, (3,3), activation='relu'),
+    layers.MaxPooling2D(2,2),
+    
+    layers.Conv2D(256, (3,3), activation='relu'),
+    layers.MaxPooling2D(2,2),
+    
+    layers.Flatten(),
+    layers.Dropout(0.5),
+    layers.Dense(512, activation='relu'),
+    layers.Dense(NUM_CLASSES, activation='softmax')
+])
 
-model.add(layers.Conv2D(32, (3,3), activation='relu', input_shape=(150,150,3)))
-model.add(layers.MaxPooling2D(2,2))
+model.summary()
 
-model.add(layers.Conv2D(64, (3,3), activation='relu'))
-model.add(layers.MaxPooling2D(2,2))
-
-model.add(layers.Conv2D(128, (3,3), activation='relu'))
-model.add(layers.MaxPooling2D(2,2))
-
-model.add(layers.Flatten())
-model.add(layers.Dense(128, activation='relu'))
-model.add(layers.Dropout(0.5))
-
-model.add(layers.Dense(17, activation='softmax'))
-
-# =========================================
-# Compile Model
-# =========================================
-
+# -------------------------------
+# 4. کامپایل مدل
+# -------------------------------
 model.compile(
     optimizer='adam',
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# =========================================
-# Train Model
-# =========================================
-
-history = model.fit(
-    train_data,
-    epochs=epochs,
-    validation_data=test_data
+# -------------------------------
+# 5. تعریف Callback‌ها برای جلوگیری از overfitting و ذخیره بهترین مدل
+# -------------------------------
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=7,
+    restore_best_weights=True
 )
 
-# =========================================
-# Save Model
-# =========================================
+checkpoint = ModelCheckpoint(
+    'best_flower_model.h5',
+    monitor='val_accuracy',
+    save_best_only=True,
+    mode='max'
+)
 
-model.save("flower_cnn_model.h5")
+# -------------------------------
+# 6. آموزش مدل
+# -------------------------------
+history = model.fit(
+    train_generator,
+    epochs=EPOCHS,
+    validation_data=test_generator,    # به عنوان validation از تست استفاده می‌شود
+    callbacks=[early_stop, checkpoint],
+    verbose=1
+)
 
-# =========================================
-# Plot Accuracy
-# =========================================
+# -------------------------------
+# 7. ارزیابی نهایی روی مجموعه تست
+# -------------------------------
+test_loss, test_acc = model.evaluate(test_generator, verbose=0)
+print(f"\nدقت روی مجموعه تست: {test_acc:.4f}")
 
-plt.plot(history.history['accuracy'], label='Train Accuracy')
-plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+# -------------------------------
+# 8. رسم نمودار دقت و تابع ضرر
+# -------------------------------
+plt.figure(figsize=(12,4))
+plt.subplot(1,2,1)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('مدل دقت')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
 plt.legend()
-plt.title("Model Accuracy")
+
+plt.subplot(1,2,2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('مدل تابع ضرر')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
 plt.show()
 
-# =========================================
-# Prediction Function (Inference)
-# =========================================
-
-class_names = list(train_data.class_indices.keys())
-
-def predict_image(img_path):
-    img = image.load_img(img_path, target_size=(150,150))
-    img_array = image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-
-    prediction = model.predict(img_array)
-    class_index = np.argmax(prediction)
-
-    print("Predicted Class:", class_names[class_index])
-
-    plt.imshow(img)
-    plt.axis("off")
-    plt.show()
-
-# =========================================
-# Example Inference (External Images)
-# =========================================
-
-# predict_image("rose.jpg")
-# predict_image("sunflower.jpg")
-# predict_image("tulip.jpg")
+# -------------------------------
+# 9. بارگذاری بهترین مدل ذخیره‌شده (اختیاری)
+# -------------------------------
+# best_model = tf.keras.models.load_model('best_flower_model.h5')
